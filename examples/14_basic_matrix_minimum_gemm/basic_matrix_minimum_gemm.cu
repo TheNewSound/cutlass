@@ -202,7 +202,7 @@ __global__ void InitializeMatrix_kernel(
 
     // Generate arbitrary elements.
     int const k = 16807;
-    int const m = 3;
+    int const m = 4;
     uint8_t value = ((offset + seed) * k % m);
 
     matrix[offset] = value;
@@ -544,16 +544,24 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   // Test for bit equivalence of results.
   //
   std::ofstream outFileA("A.txt");
-  for (const auto &e : host_a) outFileA << unsigned(e) << "\n";
+  for (size_t i = 0; i < host_a.size(); ++i){
+    outFileA << unsigned(host_a.at(i)) << ((i%K==K-1)?"\n":";");
+  }
 
   std::ofstream outFileB("B.txt");
-  for (const auto &e : host_b) outFileB << unsigned(e) << "\n";
+  for (size_t i = 0; i < host_b.size(); ++i){
+    outFileB << unsigned(host_b.at(i)) << ((i%N==N-1)?"\n":";");
+  }
 
   std::ofstream outFileC("cutlass.txt");
-  for (const auto &e : host_cutlass) outFileC << e << "\n";
+  for (size_t i = 0; i < host_cutlass.size(); ++i){
+    outFileC << unsigned(host_cutlass.at(i)) << ((i%N==N-1)?"\n":";");
+  }
 
   std::ofstream outFileR("reference.txt");
-  for (const auto &e : host_reference) outFileR << e << "\n";
+  for (size_t i = 0; i < host_reference.size(); ++i){
+    outFileR << unsigned(host_reference.at(i)) << ((i%N==N-1)?"\n":";");
+  }
 
   if (host_cutlass != host_reference) {
     std::cerr << "CUTLASS results incorrect." << std::endl;
@@ -579,7 +587,7 @@ int main(int argc, const char *arg[]) {
   //
 
   // GEMM problem dimensions.
-  int problem[3] = { 128, 128, 128 };
+  int problem[3] = { 16, 16, 16 };
 
   for (int i = 1; i < argc && i < 4; ++i) {
     std::stringstream ss(arg[i]);

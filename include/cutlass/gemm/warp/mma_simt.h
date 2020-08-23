@@ -116,7 +116,7 @@ public:
                       layout::RowMajor,
                       LayoutA>::type
                  >::type;
-  
+
   using ThreadLayoutB = typename platform::conditional< platform::is_same< layout::ColumnMajorInterleaved<4>, LayoutB >::value,
                   layout::ColumnMajor,
                   typename platform::conditional < platform::is_same< layout::RowMajorInterleaved<4>, LayoutB >::value,
@@ -124,9 +124,9 @@ public:
                       LayoutB>::type
                  >::type;
 
-  static constexpr bool use_dp4a = (platform::is_same< layout::ColumnMajorInterleaved<4>, LayoutA>::value || 
-                                    platform::is_same< layout::RowMajorInterleaved<4>, LayoutA >::value) && 
-                                    platform::is_same< ElementA, int8_t >::value && 
+  static constexpr bool use_dp4a = (platform::is_same< layout::ColumnMajorInterleaved<4>, LayoutA>::value ||
+                                    platform::is_same< layout::RowMajorInterleaved<4>, LayoutA >::value) &&
+                                    platform::is_same< ElementA, int8_t >::value &&
                                     platform::is_same< ElementB, int8_t >::value;
 
   using dp4a_type = typename platform::conditional< use_dp4a , int8_t, bool >::type;
@@ -143,7 +143,7 @@ public:
     ThreadLayoutB,
     ElementC,
     LayoutC,
-    arch::OpMultiplyAdd,
+    arch::OpMinimumAdd,
     dp4a_type
   >;
 
@@ -211,9 +211,9 @@ public:
   /// Performs a warp-level matrix multiply-accumulate operation
   CUTLASS_DEVICE
   void operator()(
-    FragmentC &d, 
-    FragmentA const &a, 
-    FragmentB const &b, 
+    FragmentC &d,
+    FragmentA const &a,
+    FragmentB const &b,
     FragmentC const &c, int group_idx = 0) const {
 
     ThreadMma mma;
