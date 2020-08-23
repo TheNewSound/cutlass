@@ -65,18 +65,17 @@ namespace arch {
     /// Layout of C matrix
     typename LayoutC
   >
-  struct Mma<gemm::GemmShape<1, 1, 1>, 1, uint8_t, LayoutA, uint8_t, LayoutB, int32_t, LayoutC, OpMinimumAdd> {
+  struct Mma<gemm::GemmShape<1, 1, 1>, 1, int8_t, LayoutA, int8_t, LayoutB, int32_t, LayoutC, OpMinimumAdd> {
 
     using Shape = gemm::GemmShape<1, 1, 1>;
 
     CUTLASS_HOST_DEVICE
     void operator()(
       Array<int32_t, 1> &d,
-      Array<uint8_t, 1> const &a,
-      Array<uint8_t, 1> const &b,
+      Array<int8_t, 1> const &a,
+      Array<int8_t, 1> const &b,
       Array<int32_t, 1> const &c
     ) {
-
       d[0] = min(a[0],b[0]) + c[0];
     }
   };
@@ -87,26 +86,17 @@ namespace arch {
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Matrix minimum-add operation: U16 = min(U8,U8) + U16
+/// Matrix minimum-add operation: S32 = min(U8,U8) + S32
 template <typename LayoutA, typename LayoutB, typename LayoutC>
-struct Mma<
-  gemm::GemmShape<1,1,4>,
-  1,
-  uint8_t,
-  LayoutA,
-  uint8_t,
-  LayoutB,
-  int32_t,
-  LayoutC,
-  OpMinimumAdd> {
+struct Mma<gemm::GemmShape<1,1,4>, 1, int8_t, LayoutA, int8_t, LayoutB, int32_t, LayoutC, OpMinimumAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 4>;
 
   CUTLASS_HOST_DEVICE
   void operator()(
     Array<int32_t, 1> &d,
-    Array<uint8_t, 4> const &a,
-    Array<uint8_t, 4> const &b,
+    Array<int8_t, 4> const &a,
+    Array<int8_t, 4> const &b,
     Array<int32_t, 1> const &c
   ) {
 
@@ -115,7 +105,7 @@ struct Mma<
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
 
-    asm volatile("vmin4.s32.u32.u32.add %0, %1, %2, %3;"
+    asm volatile("vmin4.s32.s32.s32.add %0, %1, %2, %3;"
                  : "=r"(d[0])
                  : "r"(A), "r"(B), "r"(c[0]));
 #else

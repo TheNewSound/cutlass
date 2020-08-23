@@ -24,10 +24,10 @@
  **************************************************************************************************/
 
 /*! \file
-    \brief 
+    \brief
       Default kernel-level GEMM definitions combine threadblock-scoped matrix multiply-add with
       the appropriate threadblock-scoped epilogue.
-  
+
       Note, CUTLASS epilogues universally target row-major outputs. Column-major outputs are
       accommodated by exchanging A and B operands and assuming transposed layouts. Partial
       specializations here choose 'device::GemmTransposed' to implement this functionality.
@@ -762,40 +762,40 @@ template <
     /// epilogue
     bool SplitKSerial,
     /// Operation performed by GEMM
-    typename Operator> 
+    typename Operator>
 struct DefaultGemm<
-  ElementA, LayoutA, kAlignmentA, 
-  ElementB, LayoutB, kAlignmentB, 
-  ElementC, LayoutC, 
-  ElementAccumulator, 
+  ElementA, LayoutA, kAlignmentA,
+  ElementB, LayoutB, kAlignmentB,
+  ElementC, LayoutC,
+  ElementAccumulator,
   arch::OpClassWmmaTensorOp,
-  ArchTag, 
+  ArchTag,
   ThreadblockShape, WarpShape, InstructionShape,
-  EpilogueOutputOp, 
-  ThreadblockSwizzle, 
-  Stages, 
+  EpilogueOutputOp,
+  ThreadblockSwizzle,
+  Stages,
   SplitKSerial,
   Operator> {
   /// Define the threadblock-scoped matrix multiply-accumulate
   using Mma = typename cutlass::gemm::threadblock::DefaultMma<
       ElementA, LayoutA, kAlignmentA,
       ElementB, LayoutB, kAlignmentB,
-      ElementAccumulator, LayoutC, 
-      arch::OpClassWmmaTensorOp, 
+      ElementAccumulator, LayoutC,
+      arch::OpClassWmmaTensorOp,
       ArchTag,
-      ThreadblockShape, 
-      WarpShape, 
-      InstructionShape, 
+      ThreadblockShape,
+      WarpShape,
+      InstructionShape,
       Stages,
       Operator>::ThreadblockMma;
 
   static const int kPartitionsK = ThreadblockShape::kK / WarpShape::kK;
 
-  /// Define the epilogue 
+  /// Define the epilogue
   using Epilogue = typename cutlass::epilogue::threadblock::DefaultEpilogueWmmaTensorOp<
       ThreadblockShape,
-      typename Mma::Operator, 
-      kPartitionsK, 
+      typename Mma::Operator,
+      kPartitionsK,
       EpilogueOutputOp,
       EpilogueOutputOp::kCount
   >::Epilogue;

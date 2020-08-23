@@ -87,7 +87,6 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, double, LayoutA, double, LayoutB, double
     Array<double, 1> const &b,
     Array<double, 1> const &c
   ) {
-
     d[0] = a[0] * b[0] + c[0];
   }
 };
@@ -114,7 +113,6 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, int, LayoutA, int, LayoutB, int, LayoutC
     Array<int, 1> const &b,
     Array<int, 1> const &c
   ) {
-
     d[0] = a[0] * b[0] + c[0];
   }
 };
@@ -133,12 +131,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  complex<float>, 
-  LayoutA, 
-  complex<float>, 
-  LayoutB, 
-  complex<float>, 
-  LayoutC, 
+  complex<float>,
+  LayoutA,
+  complex<float>,
+  LayoutB,
+  complex<float>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;
@@ -172,12 +170,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  complex<float>, 
-  LayoutA, 
-  float, 
-  LayoutB, 
-  complex<float>, 
-  LayoutC, 
+  complex<float>,
+  LayoutA,
+  float,
+  LayoutB,
+  complex<float>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;
@@ -209,12 +207,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  float, 
-  LayoutA, 
-  complex<float>, 
-  LayoutB, 
-  complex<float>, 
-  LayoutC, 
+  float,
+  LayoutA,
+  complex<float>,
+  LayoutB,
+  complex<float>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;
@@ -246,12 +244,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  complex<double>, 
-  LayoutA, 
-  complex<double>, 
-  LayoutB, 
-  complex<double>, 
-  LayoutC, 
+  complex<double>,
+  LayoutA,
+  complex<double>,
+  LayoutB,
+  complex<double>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;
@@ -283,12 +281,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  complex<double>, 
-  LayoutA, 
-  double, 
-  LayoutB, 
-  complex<double>, 
-  LayoutC, 
+  complex<double>,
+  LayoutA,
+  double,
+  LayoutB,
+  complex<double>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;
@@ -318,12 +316,12 @@ template <
 struct Mma<
   gemm::GemmShape<1, 1, 1>,
   1,
-  double, 
-  LayoutA, 
-  complex<double>, 
-  LayoutB, 
-  complex<double>, 
-  LayoutC, 
+  double,
+  LayoutA,
+  complex<double>,
+  LayoutB,
+  complex<double>,
+  LayoutC,
   OpMultiplyAdd> {
 
   using Shape = gemm::GemmShape<1, 1, 1>;

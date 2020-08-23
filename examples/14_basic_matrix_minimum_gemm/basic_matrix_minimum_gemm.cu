@@ -51,6 +51,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <fstream>
 
 // Helper methods to check for errors
 #include "helper.h"
@@ -74,13 +75,11 @@ cudaError_t CutlassSgemmNN(
   int M,
   int N,
   int K,
-  float alpha,
-  float const *A,
+  int8_t const *A,
   int lda,
-  float const *B,
+  int8_t const *B,
   int ldb,
-  float beta,
-  float *C,
+  int32_t *C,
   int ldc) {
 
   // Define type definition for single-precision CUTLASS GEMM with column-major
@@ -95,15 +94,14 @@ cudaError_t CutlassSgemmNN(
   using ColumnMajor = cutlass::layout::ColumnMajor;
   using OperatorClass_ = cutlass::arch::OpClassSimt;
   using ArchTag_ = cutlass::arch::Sm50;
-  using ElementA_ = uint8_t;
-  using ElementB_ = uint8_t;
+  using ElementA_ = int8_t;
+  using ElementB_ = int8_t;
   using ElementC_ = int32_t;
   using ElementAccumulator_ = int32_t;
-  using OpMinimumAdd = cutlass::arch::OpMinimumAdd;
 
-  using CutlassGemm = cutlass::gemm::device::Gemm<uint8_t,        // Data-type of A matrix
+  using CutlassGemm = cutlass::gemm::device::Gemm<int8_t,        // Data-type of A matrix
                                                   ColumnMajor,  // Layout of A matrix
-                                                  uint8_t,        // Data-type of B matrix
+                                                  int8_t,        // Data-type of B matrix
                                                   ColumnMajor,  // Layout of B matrix
                                                   int32_t,        // Data-type of C matrix
                                                   ColumnMajor,
@@ -113,21 +111,21 @@ cudaError_t CutlassSgemmNN(
                                                   /// Tag indicating architecture to tune for
                                                   cutlass::arch::Sm50,
                                                   /// Threadblock-level tile size (concept: GemmShape)
-                                                  typename cutlass::gemm::device::DefaultGemmConfiguration<OperatorClass_, ArchTag_, ElementA_, ElementB_, ElementC_, ElementAccumulator_>::ThreadblockShape,
+                                                  cutlass::gemm::device::DefaultGemmConfiguration<OperatorClass_, ArchTag_, ElementA_, ElementB_, ElementC_, ElementAccumulator_>::ThreadblockShape,
                                                   /// Warp-level tile size (concept: GemmShape)
-                                                  typename cutlass::gemm::device::DefaultGemmConfiguration<
+                                                  cutlass::gemm::device::DefaultGemmConfiguration<
                                                       OperatorClass_, ArchTag_, ElementA_, ElementB_, ElementC_,
                                                       ElementAccumulator_>::WarpShape,
                                                   /// Instruction-level tile size (concept: GemmShape)
-                                                  typename cutlass::gemm::device::DefaultGemmConfiguration<
+                                                  cutlass::gemm::device::DefaultGemmConfiguration<
                                                       OperatorClass_, ArchTag_, ElementA_, ElementB_, ElementC_,
                                                       ElementAccumulator_>::InstructionShape,
                                                   /// Epilogue output operator
-                                                  typename cutlass::gemm::device::DefaultGemmConfiguration<
+                                                  cutlass::gemm::device::DefaultGemmConfiguration<
                                                       OperatorClass_, ArchTag_, ElementA_, ElementB_, ElementC_,
                                                       ElementAccumulator_>::EpilogueOutputOp,
                                                   /// Threadblock-level swizzling operator
-                                                  typename cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>,
+                                                  cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>,
                                                   /// Number of stages used in the pipelined mainloop
                                                   cutlass::gemm::device::DefaultGemmConfiguration<OperatorClass_, ArchTag_, ElementA_, ElementB_,
                                                                                ElementC_, ElementAccumulator_>::kStages,
@@ -140,7 +138,8 @@ cudaError_t CutlassSgemmNN(
                                                   /// If true, kernel supports split-K with serial reduction
                                                   false,
                                                   /// Operation performed by GEMM
-                                                  cutlass::arch::OpMinimumAdd>; // Layout of C matrix
+                                                  cutlass::arch::OpMinimumAdd,
+                                                  false>; // Layout of C matrix
 
   // Define a CUTLASS GEMM type
   CutlassGemm gemm_operator;
@@ -159,7 +158,7 @@ cudaError_t CutlassSgemmNN(
                               {B, ldb},    // Tensor-ref for source matrix B
                               {C, ldc},    // Tensor-ref for source matrix C
                               {C, ldc},    // Tensor-ref for destination matrix D (may be different memory than source C matrix)
-                              {alpha, beta}); // Scalars used in the Epilogue
+                              {1, 0}); // Scalars used in the Epilogue
 
   //
   // Launch the CUTLASS GEMM kernel.
@@ -186,9 +185,10 @@ cudaError_t CutlassSgemmNN(
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 /// Kernel to initialize a matrix with small integers.
 __global__ void InitializeMatrix_kernel(
-  float *matrix,
+  int8_t *matrix,
   int ldm,
   int rows,
   int columns,
@@ -202,16 +202,15 @@ __global__ void InitializeMatrix_kernel(
 
     // Generate arbitrary elements.
     int const k = 16807;
-    int const m = 16;
-    float value = float(((offset + seed) * k % m) - m / 2);
+    int const m = 3;
+    uint8_t value = ((offset + seed) * k % m);
 
     matrix[offset] = value;
   }
 }
 
 /// Simple function to initialize a matrix to arbitrary small integers.
-cudaError_t InitializeMatrix(float *matrix, int ldm, int rows, int columns, int seed = 0) {
-
+cudaError_t InitializeMatrix(int8_t *matrix, int ldm, int rows, int columns, int seed = 0) {
   dim3 block(16, 16);
   dim3 grid(
     (rows + block.x - 1) / block.x,
@@ -226,10 +225,10 @@ cudaError_t InitializeMatrix(float *matrix, int ldm, int rows, int columns, int 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Allocates device memory for a matrix then fills with arbitrary small integers.
-cudaError_t AllocateMatrix(float **matrix, int ldm, int rows, int columns, int seed = 0) {
+cudaError_t AllocateMatrix(int8_t **matrix, int ldm, int rows, int columns, int seed = 0) {
   cudaError_t result;
 
-  size_t sizeof_matrix = sizeof(float) * ldm * columns;
+  size_t sizeof_matrix = sizeof(int8_t) * ldm * columns;
 
   // Allocate device memory.
   result = cudaMalloc(reinterpret_cast<void **>(matrix), sizeof_matrix);
@@ -261,6 +260,45 @@ cudaError_t AllocateMatrix(float **matrix, int ldm, int rows, int columns, int s
   return result;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/// Allocates device memory for a matrix
+cudaError_t AllocateMatrix(int32_t **matrix, int ldm, int rows, int columns, int seed = 0) {
+  cudaError_t result;
+
+  size_t sizeof_matrix = sizeof(int32_t) * ldm * columns;
+
+  // Allocate device memory.
+  result = cudaMalloc(reinterpret_cast<void **>(matrix), sizeof_matrix);
+
+  if (result != cudaSuccess) {
+    std::cerr << "Failed to allocate matrix: "
+      << cudaGetErrorString(result) << std::endl;
+    return result;
+  }
+
+  // Clear the allocation.
+  result = cudaMemset(*matrix, 0, sizeof_matrix);
+
+  if (result != cudaSuccess) {
+    std::cerr << "Failed to clear matrix device memory: "
+      << cudaGetErrorString(result) << std::endl;
+    return result;
+  }
+
+  // Initialize matrix elements to arbitrary small integers.
+  //result = InitializeMatrix(*matrix, ldm, rows, columns, seed);
+  /*
+  if (result != cudaSuccess) {
+    std::cerr << "Failed to initialize matrix: "
+      << cudaGetErrorString(result) << std::endl;
+    return result;
+  }*/
+
+  return result;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Naive reference GEMM computation.
@@ -268,26 +306,33 @@ __global__ void ReferenceGemm_kernel(
   int M,
   int N,
   int K,
-  float alpha,
-  float const *A,
+  int8_t const *A,
   int lda,
-  float const *B,
+  int8_t const *B,
   int ldb,
-  float beta,
-  float *C,
+  int32_t *C,
   int ldc) {
 
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
 
   if (i < M && j < N) {
-    float accumulator = 0;
+    int32_t accumulator = 0;
+    //int32_t accumulator2 = 0;
 
     for (int k = 0; k < K; ++k) {
       accumulator += min(A[i + k * lda], B[k + j * ldb]);
+      /*accumulator2 += A[i + k * lda] * B[k + j * ldb];
+      if(i==1 && j==2){
+        printf("Hello a %d, b %d, acc1 %d acc2 %d\n", A[i + k * lda], B[k + j * ldb], accumulator, accumulator2);
+      }*/
     }
 
-    C[i + j * ldc] = alpha * accumulator + beta * C[i + j * ldc];
+    C[i + j * ldc] = accumulator + C[i + j * ldc];
+
+    /*if(i==1 && j==2){
+      printf("Hello i %d, j %d, acc %d total %d\n", i, j, accumulator, C[i + j * ldc]);
+    }*/
   }
 }
 
@@ -296,13 +341,11 @@ cudaError_t ReferenceGemm(
   int M,
   int N,
   int K,
-  float alpha,
-  float const *A,
+  int8_t const *A,
   int lda,
-  float const *B,
+  int8_t const *B,
   int ldb,
-  float beta,
-  float *C,
+  int32_t *C,
   int ldc) {
 
   dim3 block(16, 16);
@@ -311,7 +354,7 @@ cudaError_t ReferenceGemm(
     (N + block.y - 1) / block.y
   );
 
-  ReferenceGemm_kernel<<< grid, block >>>(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  ReferenceGemm_kernel<<< grid, block >>>(M, N, K, A, lda, B, ldb, C, ldc);
 
   return cudaGetLastError();
 }
@@ -333,13 +376,13 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   int ldc = M;
 
   // Compute size in bytes of the C matrix.
-  size_t sizeof_C = sizeof(float) * ldc * N;
+  size_t sizeof_C = sizeof(int32_t) * ldc * N;
 
   // Define pointers to matrices in GPU device memory.
-  float *A;
-  float *B;
-  float *C_cutlass;
-  float *C_reference;
+  int8_t *A;
+  int8_t *B;
+  int32_t *C_cutlass;
+  int32_t *C_reference;
 
   //
   // Allocate matrices in GPU device memory with arbitrary seeds.
@@ -393,7 +436,7 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   // Launch CUTLASS GEMM.
   //
 
-  result = CutlassSgemmNN(M, N, K, alpha, A, lda, B, ldb, beta, C_cutlass, ldc);
+  result = CutlassSgemmNN(M, N, K, A, lda, B, ldb, C_cutlass, ldc);
 
   if (result != cudaSuccess) {
     std::cerr << "CUTLASS GEMM kernel failed: "
@@ -412,7 +455,7 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   //
 
   // Launch reference GEMM
-  result = ReferenceGemm(M, N, K, alpha, A, lda, B, ldb, beta, C_reference, ldc);
+  result = ReferenceGemm(M, N, K, A, lda, B, ldb, C_reference, ldc);
 
   if (result != cudaSuccess) {
     std::cerr << "Reference GEMM kernel failed: "
@@ -427,8 +470,38 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   }
 
   // Copy to host and verify equivalence.
-  std::vector<float> host_cutlass(ldc * N, 0);
-  std::vector<float> host_reference(ldc * N, 0);
+  std::vector<int8_t> host_a(lda * K, 0);
+  std::vector<int8_t> host_b(ldb * N, 0);
+  std::vector<int32_t> host_cutlass(ldc * N, 0);
+  std::vector<int32_t> host_reference(ldc * N, 0);
+
+  result = cudaMemcpy(host_a.data(), A, sizeof(int8_t)*ldc*N, cudaMemcpyDeviceToHost);
+
+  if (result != cudaSuccess) {
+    std::cerr << "Failed to copy GEMM A matrix: "
+      << cudaGetErrorString(result) << std::endl;
+
+    cudaFree(C_reference);
+    cudaFree(C_cutlass);
+    cudaFree(B);
+    cudaFree(A);
+
+    return result;
+  }
+
+  result = cudaMemcpy(host_b.data(), B, sizeof(int8_t)*ldc*N, cudaMemcpyDeviceToHost);
+
+  if (result != cudaSuccess) {
+    std::cerr << "Failed to copy GEMM B matrix: "
+      << cudaGetErrorString(result) << std::endl;
+
+    cudaFree(C_reference);
+    cudaFree(C_cutlass);
+    cudaFree(B);
+    cudaFree(A);
+
+    return result;
+  }
 
   result = cudaMemcpy(host_cutlass.data(), C_cutlass, sizeof_C, cudaMemcpyDeviceToHost);
 
@@ -470,6 +543,17 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
   //
   // Test for bit equivalence of results.
   //
+  std::ofstream outFileA("A.txt");
+  for (const auto &e : host_a) outFileA << unsigned(e) << "\n";
+
+  std::ofstream outFileB("B.txt");
+  for (const auto &e : host_b) outFileB << unsigned(e) << "\n";
+
+  std::ofstream outFileC("cutlass.txt");
+  for (const auto &e : host_cutlass) outFileC << e << "\n";
+
+  std::ofstream outFileR("reference.txt");
+  for (const auto &e : host_reference) outFileR << e << "\n";
 
   if (host_cutlass != host_reference) {
     std::cerr << "CUTLASS results incorrect." << std::endl;
