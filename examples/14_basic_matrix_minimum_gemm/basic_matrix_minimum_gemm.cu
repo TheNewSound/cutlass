@@ -92,6 +92,7 @@ cudaError_t CutlassSgemmNN(
   // To view the full gemm device API interface, see `cutlass/gemm/device/gemm.h`
 
   using ColumnMajor = cutlass::layout::ColumnMajor;
+  using RowMajor = cutlass::layout::RowMajor;
   using OperatorClass_ = cutlass::arch::OpClassSimt;
   using ArchTag_ = cutlass::arch::Sm50;
   using ElementA_ = int8_t;

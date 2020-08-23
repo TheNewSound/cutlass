@@ -82,7 +82,7 @@ struct Mma<
   using LayoutC = LayoutC_;
 
   /// Underlying mathematical operator
-  using Operator = arch::OpMultiplyAdd;
+  using Operator = arch::OpMinimumAdd;
 
   /// A operand storage
   using FragmentA = Array<ElementA, Shape::kMK>;
