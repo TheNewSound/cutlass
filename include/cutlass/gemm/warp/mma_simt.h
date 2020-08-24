@@ -66,6 +66,8 @@ template <
   typename LayoutC_,
   /// Shape of the warp in units of thread (concept: MmaSimtPolicy)
   typename Policy_,
+  /// Mathematical operator to execute
+  typename Operator_ = cutlass::arch::OpMultiplyAdd,
   /// Number of partitions along K dimension
   int PartitionsK = 1,
   /// Used for partial specialization
@@ -96,6 +98,9 @@ public:
 
   /// Shape of the warp in units of thread (concept: MmaLanePolicySimt)
   using Policy = Policy_;
+
+  /// Mathematical operator to execute
+  using Operator = Operator_;
 
   /// Indicates class of matrix operator
   using OperatorClass = arch::OpClassSimt;
@@ -143,7 +148,7 @@ public:
     ThreadLayoutB,
     ElementC,
     LayoutC,
-    arch::OpMinimumAdd,
+    Operator,
     dp4a_type
   >;
 

@@ -33,9 +33,11 @@
 #include <assert.h>
 #endif
 
-#include "mma.h"
+#include "cutlass/arch/mma.h"
 #include "cutlass/layout/matrix.h"
 #include "cutlass/numeric_types.h"
+#include "cutlass/gemm/gemm.h"
+
 
 #if ((__CUDACC_VER_MAJOR__ > 5))
 #define CUTLASS_ARCH_MMA_SM30_SUPPORTED

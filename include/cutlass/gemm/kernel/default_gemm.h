@@ -52,6 +52,7 @@
 #include "cutlass/gemm/threadblock/default_mma_core_sm80.h"
 #include "cutlass/gemm/threadblock/default_mma.h"
 #include "cutlass/gemm/threadblock/default_mma_core_simt.h"
+#include "cutlass/gemm/threadblock/default_mma_core_simt_vmin4.h"
 #include "cutlass/gemm/threadblock/threadblock_swizzle.h"
 
 #include "cutlass/epilogue/threadblock/default_epilogue_tensor_op.h"

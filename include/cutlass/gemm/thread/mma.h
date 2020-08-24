@@ -77,8 +77,8 @@ struct Mma;
 // Overloads specialized for existing architectures
 //
 
-#include "cutlass/gemm/thread/mma_sm30.h"
 #include "cutlass/gemm/thread/mma_sm50.h"
+#include "cutlass/gemm/thread/mma_sm30_vmin4.h"
 #include "cutlass/gemm/thread/mma_sm60.h"
 #include "cutlass/gemm/thread/mma_sm61.h"
 

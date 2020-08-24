@@ -90,6 +90,7 @@ struct DefaultMmaCore<Shape_, WarpShape_, GemmShape<1, 1, 1>, ElementA_,
   using ElementC = ElementC_;
   using LayoutC = LayoutC_;
   using OperatorClass = arch::OpClassSimt;
+  using Operator = Operator_;
 
   /// Number of warps present
   using WarpCount = GemmShape<
@@ -134,8 +135,8 @@ struct DefaultMmaCore<Shape_, WarpShape_, GemmShape<1, 1, 1>, ElementA_,
 
   /// Shared memory iterator to A operand
   using SmemIteratorA = transform::threadblock::RegularTileIterator<
-    MatrixShape<Shape::kM, Shape::kK>, 
-    ElementA, 
+    MatrixShape<Shape::kM, Shape::kK>,
+    ElementA,
     SmemLayoutA,
     1,
     IteratorThreadMapA
@@ -150,8 +151,8 @@ struct DefaultMmaCore<Shape_, WarpShape_, GemmShape<1, 1, 1>, ElementA_,
 
   /// Shared memory iterator to B operand
   using SmemIteratorB = transform::threadblock::RegularTileIterator<
-    MatrixShape<Shape::kK, Shape::kN>, 
-    ElementB, 
+    MatrixShape<Shape::kK, Shape::kN>,
+    ElementB,
     SmemLayoutB,
     0,
     IteratorThreadMapB
@@ -164,11 +165,11 @@ struct DefaultMmaCore<Shape_, WarpShape_, GemmShape<1, 1, 1>, ElementA_,
   // Define the warp-level tensor op
   using WarpMma = cutlass::gemm::warp::MmaSimt<
     WarpShape,
-    ElementA, 
-    SmemLayoutA, 
-    ElementB, 
+    ElementA,
+    SmemLayoutA,
+    ElementB,
     SmemLayoutB,
-    ElementC, 
+    ElementC,
     LayoutC,
     warp::MmaSimtPolicy<
       MatrixShape<4, 8>,
@@ -178,10 +179,12 @@ struct DefaultMmaCore<Shape_, WarpShape_, GemmShape<1, 1, 1>, ElementA_,
         128 / sizeof_bits<ElementB>::value,
         1>
       >
-    >
+    >,
+    Operator
+
   >;
 
-  /// Policy used to define MmaPipelined 
+  /// Policy used to define MmaPipelined
   using MmaPolicy = MmaPolicy<
     WarpMma,
     MatrixShape<0, 0>,

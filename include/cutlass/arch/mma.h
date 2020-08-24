@@ -164,8 +164,8 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, ElementA, LayoutA, ElementB, LayoutB, El
 // Specializations for each compute capability
 //
 
-#include "cutlass/arch/mma_sm30.h"
 #include "cutlass/arch/mma_sm50.h"
+#include "cutlass/arch/mma_sm30_vmin4.h"
 #include "cutlass/arch/mma_sm60.h"
 #include "cutlass/arch/mma_sm61.h"
 #include "cutlass/arch/mma_sm70.h"
