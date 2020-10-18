@@ -593,6 +593,64 @@ struct DefaultMma<int8_t, LayoutA, kAlignmentA, int8_t, LayoutB, kAlignmentB,
       layout::RowMajor, typename MmaCore::MmaPolicy>;
 };
 
+
+/// Specialization for SIMT IDP4A Kernels
+        template <
+                /// Layout type for A matrix operand
+                typename LayoutA,
+                /// Access granularity of A matrix in units of elements
+                int kAlignmentA,
+                /// Layout type for B matrix operand
+                typename LayoutB,
+                /// Access granularity of B matrix in units of elements
+                int kAlignmentB,
+                /// Element type for internal accumulation
+                typename ElementAccumulator,
+                /// Tag indicating architecture to tune for
+                typename ArchTag,
+                /// Threadblock-level tile size (concept: GemmShape)
+                typename ThreadblockShape,
+                /// Operation performed by GEMM
+                typename Operator,
+                /// Warp-level tile size (concept: GemmShape)
+                typename WarpShape>
+        struct DefaultMma<uint8_t, LayoutA, kAlignmentA, uint8_t, LayoutB, kAlignmentB,
+                ElementAccumulator, layout::RowMajor, arch::OpClassSimt,
+                ArchTag, ThreadblockShape, WarpShape, GemmShape<1, 1, 4>, 2,
+                Operator, false> {
+            using InstructionShape = GemmShape<1, 1, 4>;
+            using ElementA = uint8_t;
+            using ElementB = uint8_t;
+            using OperatorClass =  arch::OpClassSimt;
+
+            static const bool transposeA =  cutlass::platform::is_same< LayoutA, layout::ColumnMajor >::value;
+            static const bool transposeB =  cutlass::platform::is_same< LayoutB, layout::RowMajor >::value;
+
+            // Define the MmaCore components
+            using MmaCore = typename cutlass::gemm::threadblock::DefaultMmaCore<
+                    ThreadblockShape, WarpShape, InstructionShape, ElementA, LayoutA,
+                    ElementB, LayoutB, ElementAccumulator, layout::RowMajor,
+                    OperatorClass, 2, Operator>;
+
+            // Define iterators over tiles from the A operand
+            using IteratorA =
+            cutlass::transform::threadblock::PredicatedTileIterator2dThreadTile<
+                    cutlass::MatrixShape<MmaCore::Shape::kM, MmaCore::Shape::kK>,
+                    ElementA, LayoutA, 1, typename MmaCore::IteratorThreadMapA, transposeA>;
+
+            // Define iterators over tiles from the B operand
+            using IteratorB =
+            cutlass::transform::threadblock::PredicatedTileIterator2dThreadTile<
+                    cutlass::MatrixShape<MmaCore::Shape::kK, MmaCore::Shape::kN>,
+                    ElementB, LayoutB, 0, typename MmaCore::IteratorThreadMapB, transposeB>;
+
+            // Define the threadblock-scoped pipelined matrix multiply
+            using ThreadblockMma = cutlass::gemm::threadblock::MmaPipelined<
+                    typename MmaCore::Shape, IteratorA, typename MmaCore::SmemIteratorA,
+                    IteratorB, typename MmaCore::SmemIteratorB, ElementAccumulator,
+                    layout::RowMajor, typename MmaCore::MmaPolicy>;
+        };
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(CUTLASS_ARCH_WMMA_ENABLED)

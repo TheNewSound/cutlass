@@ -126,10 +126,12 @@ public:
 
   static constexpr bool use_dp4a = (platform::is_same< layout::ColumnMajorInterleaved<4>, LayoutA>::value || 
                                     platform::is_same< layout::RowMajorInterleaved<4>, LayoutA >::value) && 
-                                    platform::is_same< ElementA, int8_t >::value && 
-                                    platform::is_same< ElementB, int8_t >::value;
+                                    ((platform::is_same< ElementA, int8_t >::value &&
+                                      platform::is_same< ElementB, int8_t >::value) ||
+                                      (platform::is_same< ElementA, uint8_t >::value &&
+                                      platform::is_same< ElementB, uint8_t >::value));
 
-  using dp4a_type = typename platform::conditional< use_dp4a , int8_t, bool >::type;
+  using dp4a_type = typename platform::conditional< use_dp4a , ElementA, bool >::type;
 
   /// Thread-level matrix multiply accumulate operator
   using ThreadMma = thread::Mma<

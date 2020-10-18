@@ -61,7 +61,7 @@ struct Mma<
     Array<int, 1> const &c
   ) {
 
-#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 610))
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 300))
 
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
@@ -76,7 +76,7 @@ struct Mma<
 
     CUTLASS_PRAGMA_UNROLL
     for (int k = 0; k < 4; ++k) {
-      d[0] += a[k] * b[k];
+      d[0] += min(a[k], b[k]);
     }
 
 #endif
@@ -108,7 +108,7 @@ struct Mma<
     Array<int, 1> const &c
   ) {
 
-#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 610))
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 300))
 
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
@@ -123,7 +123,7 @@ struct Mma<
 
     CUTLASS_PRAGMA_UNROLL
     for (int k = 0; k < 4; ++k) {
-      d[0] += a[k] * b[k];
+      d[0] += min(a[k], b[k]);
     }
 
 #endif
