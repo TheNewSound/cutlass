@@ -383,8 +383,13 @@ cudaError_t TestCutlassGemm(int M, int N, int K, int8_t alpha, int8_t beta) {
   //
   // Launch CUTLASS GEMM.
   //
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
-  result = CutlassSgemmNN(M, N, K, alpha, A, lda, B, ldb, beta, C_cutlass, ldc);
+    cudaEventRecord(start);
+    result = CutlassSgemmNN(M, N, K, alpha, A, lda, B, ldb, beta, C_cutlass, ldc);
+    cudaEventRecord(stop);
 
   if (result != cudaSuccess) {
     std::cerr << "CUTLASS GEMM kernel failed: "
@@ -397,6 +402,7 @@ cudaError_t TestCutlassGemm(int M, int N, int K, int8_t alpha, int8_t beta) {
 
     return result;
   }
+
 
   //
   // Verify.
@@ -449,9 +455,15 @@ cudaError_t TestCutlassGemm(int M, int N, int K, int8_t alpha, int8_t beta) {
     return result;
   }
 
-    for (size_t i = 0; i < host_cutlass.size(); ++i){
-        std::cout << host_cutlass.at(i) << ((i%N==N-1)?"\n":";");
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << "Operation took (milliseconds):" << milliseconds << std::endl;
+
+    for (size_t i = 0; i < 16; ++i){
+        std::cout << host_cutlass.at(i) << ";";
     }
+    std::cout << std::endl;
   //
   // Free device memory allocations.
   //
