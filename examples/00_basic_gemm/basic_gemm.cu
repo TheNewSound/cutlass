@@ -458,7 +458,7 @@ cudaError_t TestCutlassGemm(int M, int N, int K, int8_t alpha, int8_t beta) {
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << "Operation took (milliseconds):" << milliseconds << std::endl;
+    printf ("Operation took (milliseconds): %f\n", milliseconds);
 
     for (size_t i = 0; i < 16; ++i){
         std::cout << host_cutlass.at(i) << ";";
