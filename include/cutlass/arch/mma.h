@@ -144,7 +144,7 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, ElementA, LayoutA, ElementB, LayoutB, El
     Array<ElementC, 1> const &c
   ) {
 
-    d[0] = a[0] * b[0] + c[0];
+    d[0] = min(a[0], b[0]) + c[0];
   }
 };
 
