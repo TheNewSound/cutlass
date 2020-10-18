@@ -66,7 +66,54 @@ struct Mma<
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
 
-    asm volatile("dp4a.s32.s32 %0, %1, %2, %3;"
+    asm volatile("vmin4.s32.s32.s32.add %0, %1, %2, %3;"
+                 : "=r"(d[0])
+                 : "r"(A), "r"(B), "r"(c[0]));
+
+#else
+
+    d[0] = c[0];
+
+    CUTLASS_PRAGMA_UNROLL
+    for (int k = 0; k < 4; ++k) {
+      d[0] += a[k] * b[k];
+    }
+
+#endif
+  }
+};
+
+
+/// Matrix multiply-add operation
+template <typename LayoutA, typename LayoutB, typename LayoutC>
+struct Mma<
+  gemm::GemmShape<1,1,4>,
+  1,
+  uint8_t,
+  LayoutA,
+  uint8_t,
+  LayoutB,
+  int,
+  LayoutC,
+  OpMultiplyAdd> {
+  
+  using Shape = gemm::GemmShape<1, 1, 4>;
+  using Operator = OpMultiplyAdd;
+  
+  CUTLASS_HOST_DEVICE
+  void operator()(
+    Array<int, 1> &d,
+    Array<uint8_t, 4> const &a,
+    Array<uint8_t, 4> const &b,
+    Array<int, 1> const &c
+  ) {
+
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 610))
+
+    unsigned const &A = reinterpret_cast<unsigned const &>(a);
+    unsigned const &B = reinterpret_cast<unsigned const &>(b);
+
+    asm volatile("vmin4.s32.u32.u32.add %0, %1, %2, %3;"
                  : "=r"(d[0])
                  : "r"(A), "r"(B), "r"(c[0]));
 

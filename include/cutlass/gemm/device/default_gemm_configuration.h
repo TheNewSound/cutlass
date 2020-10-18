@@ -115,6 +115,30 @@ struct DefaultGemmConfiguration<arch::OpClassSimt, ArchTag, int8_t, int8_t, Elem
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template < 
+  typename ArchTag,
+  typename ElementC>
+struct DefaultGemmConfiguration<arch::OpClassSimt, ArchTag, uint8_t, uint8_t, ElementC, int32_t> {
+  
+  static int const kAlignmentA = 4;
+  static int const kAlignmentB = 4;
+  using ThreadblockShape = GemmShape<128, 128, 32>;
+  using WarpShape = GemmShape<32, 64, 32>;
+  using InstructionShape = GemmShape<1, 1, 4>;
+  static int const kStages = 2;
+
+  using EpilogueOutputOp = epilogue::thread::LinearCombinationClamp<
+    ElementC,
+    1,
+    int32_t,
+    float
+  >;
+
+  using Operator = arch::OpMultiplyAdd;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <
   typename ArchTag,
   typename ElementA, 
