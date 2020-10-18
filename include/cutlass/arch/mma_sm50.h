@@ -62,7 +62,7 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, float, LayoutA, float, LayoutB, float, L
     Array<float, 1> const &b,
     Array<float, 1> const &c
   ) {
-    d[0] = a[0] * b[0] + c[0];
+    d[0] = min(a[0], b[0]) + c[0];
   }
 };
 
@@ -90,7 +90,7 @@ struct Mma<gemm::GemmShape<1, 1, 1>, 1, double, LayoutA, double, LayoutB, double
     Array<double, 1> const &c
   ) {
 
-    d[0] = a[0] * b[0] + c[0];
+    d[0] = min(a[0], b[0]) + c[0];
   }
 };
 

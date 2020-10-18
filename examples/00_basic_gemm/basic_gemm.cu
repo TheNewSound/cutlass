@@ -161,8 +161,8 @@ __global__ void InitializeMatrix_kernel(
 
     // Generate arbitrary elements.
     int const k = 16807;
-    int const m = 16;
-    float value = float(((offset + seed) * k % m) - m / 2);
+    int const m = 4;
+    float value = float((offset + seed) * k % m);
 
     matrix[offset] = value;
   }
@@ -243,7 +243,7 @@ __global__ void ReferenceGemm_kernel(
     float accumulator = 0;
 
     for (int k = 0; k < K; ++k) {
-      accumulator += A[i + k * lda] * B[k + j * ldb];
+      accumulator += min(A[i + k * lda], B[k + j * ldb]);
     }
 
     C[i + j * ldc] = alpha * accumulator + beta * C[i + j * ldc];
@@ -417,6 +417,9 @@ cudaError_t TestCutlassGemm(int M, int N, int K, float alpha, float beta) {
     return result;
   }
 
+    for (size_t i = 0; i < host_cutlass.size(); ++i){
+        std::cout << host_cutlass.at(i) << ((i%N==N-1)?"\n":";");
+    }
   //
   // Free device memory allocations.
   //
@@ -454,7 +457,7 @@ int main(int argc, const char *arg[]) {
   //
 
   // GEMM problem dimensions.
-  int problem[3] = { 128, 128, 128 };
+  int problem[3] = { 8, 8, 8 };
 
   for (int i = 1; i < argc && i < 4; ++i) {
     std::stringstream ss(arg[i]);
