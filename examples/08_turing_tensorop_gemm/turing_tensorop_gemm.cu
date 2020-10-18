@@ -115,6 +115,7 @@ the output from CUTLASS kernel is same as reference GEMM kernel.
 */
 
 #include <iostream>
+#include <sstream>
 
 #include "cutlass/cutlass.h"
 #include "cutlass/gemm/device/gemm.h"
@@ -186,7 +187,7 @@ using Gemm = cutlass::gemm::device::Gemm<ElementInputA,
                                          SwizzleThreadBlock,
                                          NumStages>;
 
-int run() {
+int run(const int length_m, const int length_n, const int length_k) {
 
   // Turing Tensor Core operations exposed with mma.sync and ldmatrix are first available
   // in CUDA 10.2. 
@@ -212,10 +213,6 @@ int run() {
     // Return 0 so tests are considered passing if run on unsupported platforms.
     return 0;
   }
-
-  const int length_m = 5120;
-  const int length_n = 4096;
-  const int length_k = 4096;
 
   // Create a tuple of problem size for matrix multiplication
   cutlass::gemm::GemmCoord problem_size(length_m, length_n, length_k);
@@ -336,7 +333,7 @@ int run() {
   return (passed ? 0  : -1);
 }
 
-int main() {
+int main(int argc, const char *arg[]) {
   // Turing Tensor Core operations exposed with mma.sync and ldmatrix are first available
   // in CUDA 10.2. 
   //
@@ -348,7 +345,14 @@ int main() {
     return 0;
   }
   else {
-    return run();
+      // GEMM problem dimensions.
+      int problem[3] = { 16, 16, 16 };
+
+      for (int i = 1; i < argc && i < 4; ++i) {
+          std::stringstream ss(arg[i]);
+          ss >> problem[i - 1];
+      }
+      return run(problem[0],problem[1],problem[2]);
   }
 }
 

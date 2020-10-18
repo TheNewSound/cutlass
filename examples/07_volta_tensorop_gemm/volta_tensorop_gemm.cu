@@ -116,6 +116,7 @@ the output from CUTLASS kernel is same as reference GEMM kernel.
 */
 
 #include <iostream>
+#include <sstream>
 
 #include "cutlass/cutlass.h"
 #include "cutlass/gemm/device/gemm.h"
@@ -131,9 +132,9 @@ the output from CUTLASS kernel is same as reference GEMM kernel.
 // elements in input matrices.
 using ElementAccumulator = float;                   // <- data type of accumulator
 using ElementComputeEpilogue = ElementAccumulator;  // <- data type of epilogue operations
-using ElementInputA = cutlass::half_t;              // <- data type of elements in input matrix A
-using ElementInputB = cutlass::half_t;              // <- data type of elements in input matrix B
-using ElementOutput = float;                        // <- data type of elements in output matrix D
+using ElementInputA = int8_t;              // <- data type of elements in input matrix A
+using ElementInputB = int8_t;              // <- data type of elements in input matrix B
+using ElementOutput = int32_t;                        // <- data type of elements in output matrix D
 
 // The code section below describes matrix layout of input and output matrices. Column Major for
 // Matrix A, Row Major for Matrix B and Row Major for Matrix C
@@ -188,7 +189,7 @@ using Gemm = cutlass::gemm::device::Gemm<ElementInputA,
                                          SwizzleThreadBlock,
                                          NumStages>;
 
-int run() {
+int run(const int length_m, const int length_n, const int length_k) {
 
   cudaDeviceProp props;
 
@@ -205,10 +206,6 @@ int run() {
     // Return 0 so tests are considered passing if run on unsupported architectures or CUDA Toolkits.
     return 0;
   }
-
-  const int length_m = 5120;
-  const int length_n = 4096;
-  const int length_k = 4096;
 
   // Create a tuple of problem size for matrix multiplication
   cutlass::gemm::GemmCoord problem_size(length_m, length_n, length_k);
@@ -329,7 +326,7 @@ int run() {
   return (passed ? 0  : -1);
 }
 
-int main() {
+int main(int argc, const char *arg[]) {
 
   // Volta Tensor Core operations exposed with mma.sync are first available in CUDA 10.1.
   //
@@ -341,7 +338,14 @@ int main() {
     return 0;
   }
   else {
-    return run();
+      // GEMM problem dimensions.
+      int problem[3] = { 16, 16, 16 };
+
+      for (int i = 1; i < argc && i < 4; ++i) {
+          std::stringstream ss(arg[i]);
+          ss >> problem[i - 1];
+      }
+    return run(problem[0],problem[1],problem[2]);
   }
 }
 
