@@ -72,6 +72,7 @@ struct Mma<
 
 #elif (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 400))
       
+    d[0] = c[0];
     int8_t t[4];
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
@@ -80,7 +81,7 @@ struct Mma<
       
     T = __vmins4(A, B);
       
-    d += t[0] + t[1] + t[2] + t[3];
+    d[0] += t[0] + t[1] + t[2] + t[3];
       
 #else
 
