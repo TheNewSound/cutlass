@@ -293,7 +293,16 @@ int run(const int length_m, const int length_n, const int length_k) {
   CUTLASS_CHECK(status);
 
   // Launch initialized CUTLASS kernel
-  status = gemm_op();
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+
+    status = gemm_op();
+    cudaEventRecord(stop);
+
+    cudaEventSynchronize(stop);
   CUTLASS_CHECK(status);
 
   // Create instantiation for device reference gemm kernel
@@ -312,12 +321,6 @@ int run(const int length_m, const int length_n, const int length_k) {
     //
     // Launch CUTLASS GEMM.
     //
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    cudaEventRecord(start);
-    
   gemm_device(problem_size,
               alpha,
               tensor_a.device_ref(),
@@ -325,10 +328,7 @@ int run(const int length_m, const int length_n, const int length_k) {
               beta,
               tensor_c.device_ref(),
               tensor_ref_d.device_ref());
-    
-    cudaEventRecord(stop);
 
-    cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     printf ("Operation took (milliseconds): %f\n", milliseconds);
