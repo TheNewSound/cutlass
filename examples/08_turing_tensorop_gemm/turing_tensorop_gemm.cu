@@ -308,6 +308,16 @@ int run(const int length_m, const int length_n, const int length_k) {
       gemm_device;
 
   // Launch device reference gemm kernel
+  
+    //
+    // Launch CUTLASS GEMM.
+    //
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+    
   gemm_device(problem_size,
               alpha,
               tensor_a.device_ref(),
@@ -315,9 +325,14 @@ int run(const int length_m, const int length_n, const int length_k) {
               beta,
               tensor_c.device_ref(),
               tensor_ref_d.device_ref());
+    
+    cudaEventRecord(stop);
 
-  // Wait for kernels to finish
-  cudaDeviceSynchronize();
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf ("Operation took (milliseconds): %f\n", milliseconds);
+
 
   // Copy output data from CUTLASS and reference kernel to host for comparison
   tensor_d.sync_host();
