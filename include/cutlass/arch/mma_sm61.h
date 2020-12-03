@@ -61,7 +61,7 @@ struct Mma<
     Array<int, 1> const &c
   ) {
 
-#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 300) && (__CUDA_ARCH__ < 400))
+#if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 300) && (__CUDA_ARCH__ < 500))
 
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
@@ -70,18 +70,13 @@ struct Mma<
                  : "=r"(d[0])
                  : "r"(A), "r"(B), "r"(c[0]));
 
-#elif (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 400))
+#elif (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 500))
       
-    d[0] = c[0];
-    int8_t t[4];
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
- 
-    unsigned &T = reinterpret_cast<unsigned &>(t);
       
-    T = __vmins4(A, B);
-      
-    d[0] += t[0] + t[1] + t[2] + t[3];
+    unsigned T = __vmins4(A, B);
+    d[0] = __dp4a(T, 0x01010101, c[0]);
       
 #else
 
