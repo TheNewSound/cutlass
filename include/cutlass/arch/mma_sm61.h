@@ -75,7 +75,7 @@ struct Mma<
     unsigned const &A = reinterpret_cast<unsigned const &>(a);
     unsigned const &B = reinterpret_cast<unsigned const &>(b);
       
-    unsigned T = __vmins4(A, B);
+    int32_t T = reinterpret_cast<int32_t const &>(__vmins4(A, B));
     d[0] = __dp4a(T, 0x01010101, c[0]);
       
 #else
